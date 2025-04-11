@@ -1,0 +1,49 @@
+name: Build .NET Framework App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v1.1.1
+
+    - name: Restore NuGet packages
+      run: nuget restore TF-AI-RPA/taskt_new/taskt_new.sln
+
+    - name: Build Solution
+      run: |
+        msbuild TF-AI-RPA/taskt_new/taskt_new.sln /p:Configuration=Release /p:Platform="Any CPU"
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: taskt-release
+        path: |
+          TF-AI-RPA/taskt_new/Commands/已完成/*.dll
+          TF-AI-RPA/taskt_new/bin/Release/*.exe
+
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          TF-AI-RPA/taskt_new/Commands/已完成/*.dll
+          TF-AI-RPA/taskt_new/bin/Release/*.exe
+        tag_name: v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
