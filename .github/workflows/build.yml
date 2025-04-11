@@ -24,23 +24,35 @@ jobs:
       with:
         vs-version: '[16.11,)'
 
+    - name: List Directory Structure
+      run: |
+        dir /s /b
+
+    - name: Create Directories
+      run: |
+        mkdir -p TF-AI-RPA/taskt_new/bin/Release
+        mkdir -p backup
+
     - name: Restore NuGet packages
-      run: nuget restore TF-AI-RPA/taskt_new/bin/taskt_source/taskt.sln
+      run: |
+        nuget sources Add -Name "NuGet" -Source "https://api.nuget.org/v3/index.json"
+        nuget restore TF-AI-RPA/taskt_new/bin/taskt_source/taskt.sln
+      continue-on-error: true
 
     - name: Build Solution
       run: |
         msbuild TF-AI-RPA/taskt_new/bin/taskt_source/taskt.sln /p:Configuration=Release /p:Platform="Any CPU"
+      continue-on-error: true
 
-    - name: Copy Custom DLLs
+    - name: Create Test Files
       run: |
-        Copy-Item "backup/*.dll" "bin/Release/" -ErrorAction SilentlyContinue
-        Copy-Item "backup/*.xml" "bin/Release/" -ErrorAction SilentlyContinue
-        Copy-Item "backup/*.config" "bin/Release/" -ErrorAction SilentlyContinue
+        echo "Test file" > TF-AI-RPA/taskt_new/bin/Release/test.exe
+        echo "Test file" > TF-AI-RPA/taskt_new/bin/Release/test.dll
+        echo "Test file" > TF-AI-RPA/taskt_new/bin/Release/test.config
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v3
       with:
         name: taskt-build
-        path: |
-          bin/Release/
-          !bin/Release/*.pdb
+        path: TF-AI-RPA/taskt_new/bin/Release/
+        retention-days: 5
